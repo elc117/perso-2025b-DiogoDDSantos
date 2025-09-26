@@ -42,24 +42,31 @@ initDB conn = execute_ conn
 
 main :: IO ()
 main = do
+  conn <- open "fullbottles.db"
+  initDB conn
 
-conn <- open "fullbottles.db"
-initDB conn
+  mPort <- lookupEnv "PORT"
+  let port = maybe 3000 Prelude.id (mPort >>= readMaybe)
 
-mPort <- lookupEnv "PORT"
-let port = maybe 3000 id (mPort >>= readMaybe)
+  putStrLn $ "Server running on port:" ++ show port
+  let opts = Options
+        { verbose  = 1
+        , settings = setHost hostAny $ setPort port defaultSettings
+        }
 
-putStrLn $ "Server running on port:" ++ show port
-let opts = Options
-      { verbose  = 1
-      , settings = setHost hostAny $ setPort port defaultSettings
-      }
-
-cottyOpts opts $ do
+  scottyOpts opts $ do
     middleware logStdoutDev
+    
+    -- GET / (serve o frontend)
+    get "/" $ do
+      setHeader "Content-Type" "text/html; charset=utf-8"
+      file "index.html"
     
     -- GET /healthz (check if the server is running)
     get "/healthz" $ text "ok"  
+
+    -- GET /api/hello (rota de teste para frontend)
+    get "/api/hello" $ text "Olá do Haskell!"
 
     -- GET /fullbottles
     get "/fullbottles" $ do
@@ -73,5 +80,3 @@ cottyOpts opts $ do
       if null result
         then status status404 >> json ("fullbottle not found" :: String)
         else json (head result)
-
-
