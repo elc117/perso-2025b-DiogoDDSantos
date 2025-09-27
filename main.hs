@@ -65,9 +65,6 @@ main = do
     -- GET /healthz (check if the server is running)
     get "/healthz" $ text "ok"  
 
-    -- GET /api/hello (rota de teste para frontend)
-    get "/api/hello" $ text "Olá do Haskell!"
-
     -- GET /fullbottles
     get "/fullbottles" $ do
       fullbottles <- liftIO $ query_ conn "SELECT id, nome, descricao FROM fullbottles" :: ActionM [Fullbottles]

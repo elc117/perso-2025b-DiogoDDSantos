@@ -1,38 +1,75 @@
 <!DOCTYPE html>
 <html>
-  <head>
-      <title>Fullbottles Web</title>
-      <style>
-          body { font-family: Arial, sans-serif; margin: 40px; }
-          .container { max-width: 800px; margin: 0 auto; }
-          .bottle { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-          button { padding: 10px 15px; margin: 5px; cursor: pointer; }
-      </style>
-  </head>
-  <body>
-      <div class='container'>
-          <h1>Fullbottles</h1>
-          <div id='bottles'></div>
-          <button onclick='loadBottles()'>Carregar Garrafas</button>
-      </div>
-      <script>
-          async function loadBottles() {
-              try {
-                  const response = await fetch('/fullbottles');
-                  const bottles = await response.json();
-                  const container = document.getElementById('bottles');
-                  container.innerHTML = bottles.map(bottle => 
-                      `<div class='bottle'>
-                          <h3>${bottle.nome}</h3>
-                          <p>${bottle.descricao}</p>
-                          <small>ID: ${bottle.id}</small>
-                      </div>`
-                  ).join('');
-              } catch (error) {
-                  console.error('Erro:', error);
-              }
-          }
-          loadBottles(); 
-      </script>
-  </body>
+    <head>
+        <title>Fullbottles Web</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .bottle { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+            button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <h1>Fullbottles</h1>
+            <div id='bottles'></div>
+            <button onclick='loadBottles()'>Carregar Fullbottles</button>
+        </div>
+        <script>
+            async function loadBottles() {
+                try {
+                    const response = await fetch('/fullbottles');
+                    const bottles = await response.json();
+                    const container = document.getElementById('bottles');
+                    container.innerHTML = bottles.map(bottle => 
+                        `<div class='bottle'>
+                            <h3>${bottle.nome}</h3>
+                            <p>${bottle.descricao}</p>
+                        </div>`
+                    ).join('');
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            } 
+        </script>
+
+        
+        <select id="fullbottleSelect">
+            <option value="">Selecione uma Fullbottle</option>
+        </select>
+        <div id="fullbottleDetails"></div>
+
+        <script>
+            async function carregarFullbottles() {
+                const resp = await fetch('/fullbottles');
+                const bottles = await resp.json();
+                const select = document.getElementById('fullbottleSelect');
+                bottles.forEach(bottle => {
+                    const opt = document.createElement('option');
+                    opt.value = bottle.id;
+                    opt.textContent = bottle.nome;
+                    select.appendChild(opt);
+                });
+            }
+
+            document.getElementById('fullbottleSelect').addEventListener('change', async function() {
+                const id = this.value;
+                const detailsDiv = document.getElementById('fullbottleDetails');
+                if (!id) {
+                    detailsDiv.innerHTML = '';
+                    return;
+                }
+                const resp = await fetch(`/fullbottles/${id}`);
+                const data = await resp.json();
+                const bottle = Array.isArray(data) ? data[0] : data;
+                if (!bottle) {
+                    detailsDiv.innerHTML = 'Não encontrado';
+                    return;
+                }
+                detailsDiv.innerHTML = `<h3>${bottle.nome}</h3><p>${bottle.descricao}</p>`;
+            });
+
+            carregarFullbottles();
+        </script>
+    </body>
 </html>
