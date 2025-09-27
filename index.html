@@ -52,6 +52,7 @@
                 });
             }
 
+
             document.getElementById('fullbottleSelect').addEventListener('change', async function() {
                 const id = this.value;
                 const detailsDiv = document.getElementById('fullbottleDetails');
@@ -61,12 +62,18 @@
                 }
                 const resp = await fetch(`/fullbottles/${id}`);
                 const data = await resp.json();
-                const bottle = Array.isArray(data) ? data[0] : data;
-                if (!bottle) {
-                    detailsDiv.innerHTML = 'Não encontrado';
-                    return;
+                const main = data.main;
+                const best = data.bestMatch;
+                let html = '';
+                if (main) {
+                    html += `<h3>Selecionada</h3><div class='bottle'><strong>${main.nome}</strong><br>${main.descricao}</div>`;
+                } else {
+                    html += '<div>Não encontrado</div>';
                 }
-                detailsDiv.innerHTML = `<h3>${bottle.nome}</h3><p>${bottle.descricao}</p>`;
+                if (best) {
+                    html += `<h3>Best Match</h3><div class='bottle'><strong>${best.nome}</strong><br>${best.descricao}</div>`;
+                }
+                detailsDiv.innerHTML = html;
             });
 
             carregarFullbottles();

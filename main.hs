@@ -6,7 +6,7 @@ import Network.HTTP.Types.Status (status404, status500)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, object, (.=))
 import GHC.Generics (Generic)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
@@ -40,6 +40,14 @@ initDB conn = execute_ conn
   \ nome TEXT,\ 
   \ descricao TEXT)"
 
+
+isOdd :: Int -> Bool
+isOdd x = x `mod` 2 == 1  
+
+bestMatch :: Int -> Int
+bestMatch x = if isOdd x then x + 1 else x - 1 
+
+
 main :: IO ()
 main = do
   conn <- open "fullbottles.db"
@@ -61,9 +69,6 @@ main = do
     get "/" $ do
       setHeader "Content-Type" "text/html; charset=utf-8"
       file "index.html"
-    
-    -- GET /healthz (check if the server is running)
-    get "/healthz" $ text "ok"  
 
     -- GET /fullbottles
     get "/fullbottles" $ do
@@ -74,6 +79,11 @@ main = do
     get "/fullbottles/:id" $ do
       idParam <- pathParam "id" :: ActionM Int
       result  <- liftIO $ query conn "SELECT id, nome, descricao FROM fullbottles WHERE id = ?" (Only idParam) :: ActionM [Fullbottles]
+      result2 <- liftIO $ query conn "SELECT id, nome, descricao FROM fullbottles WHERE id = ?" (Only (bestMatch idParam)) :: ActionM [Fullbottles]
+      let mainBottle = if null result then Nothing else Just (head result)
+          bestBottle = if null result2 then Nothing else Just (head result2)
       if null result
         then status status404 >> json ("fullbottle not found" :: String)
-        else json (head result)
+        else json $ object ["main" .= mainBottle, "bestMatch" .= bestBottle]
+
+    
