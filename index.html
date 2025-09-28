@@ -1,80 +1,64 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>Fullbottles Web</title>
-        <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                margin: 40px; 
-            }
-            .container { 
-                max-width: 800px; 
-                margin: 0 auto; 
-            }
-            .bottle { 
-                border: 1px solid #ddd; 
-                padding: 15px; 
-                margin: 10px 0; 
-                border-radius: 5px; 
-            }
-            button { 
-                padding: 10px 15px; 
-                margin: 5px; 
-                cursor: pointer; 
-            }
-            .selection-container {
-                display: flex;
-                gap: 20px;
-                margin-top: 20px;
-                align-items: flex-start;
-            }
-            .selection-box {
-                flex: 1;
-                border: 1px solid #eee;
-                padding: 15px;
-                border-radius: 5px;
-                min-height: 200px;
-            }
-            select {
-                width: 100%;
-                padding: 8px;
-                margin-bottom: 10px;
-            }
-        </style>
     </head>
     <body>
-        <div class='container'>
+
+        <!-- A maioria das linhas foram geradas artificialmente -->
+
+        <!-- Divs com as estruturas e botões que o programa ultiliza -->
+        <div>
             <h1>Fullbottles</h1>
+
+            <!-- Essa é responsavel por carregar todas as fullbottles dentro do banco de dados -->
             <div id='bottles'></div>
             <button onclick='loadBottles()'>Carregar Fullbottles</button>
             
-            <div class="selection-container">
-                <div class="selection-box">
-                    <h3>Seleção 1</h3>
+            <!-- Seleção das fullbottles -->
+            <div>
+                <div >
+                    <h3>Selecione a 1ª fullbottle</h3>
                     <select id="fullbottleSelect1">
                         <option value="">Selecione uma Fullbottle</option>
                     </select>
                     <div id="fullbottleDetails1"></div>
                 </div>
                 
-                <div class="selection-box">
-                    <h3>Seleção 2</h3>
+                <div>
+                    <h3>Selecione a 2ª fullbottle</h3>
                     <select id="fullbottleSelect2">
                         <option value="">Selecione uma Fullbottle</option>
                     </select>
                     <div id="fullbottleDetails2"></div>
                 </div>
             </div>
+
+            <!-- Área para mostrar o resultado da combinação -->
+            <div id="combinationResult" style="display: none;">
+                <h3>Resultado da Combinação</h3>
+                <div id="combinationDetails"></div>
+            </div>
+
+            <button id="checkCombinationBtn" onclick="checkCombination()" disabled>
+                Verificar Combinação
+            </button>
         </div>
 
+        <!-- Área que traz funcionalidade aos botes e seleções -->    
         <script>
+            let selectedBottle1 = null;
+            let selectedBottle2 = null;
+
+            //A partir da função get "/fullbottles" mostra todas as fullbottles que estão no banco de dados
             async function loadBottles() {
                 try {
                     const response = await fetch('/fullbottles');
                     const bottles = await response.json();
                     const container = document.getElementById('bottles');
                     container.innerHTML = bottles.map(bottle => 
-                        `<div class='bottle'>
+                        `<div>
                             <h3>${bottle.nome}</h3>
                             <p>${bottle.descricao}</p>
                         </div>`
@@ -114,15 +98,91 @@
                 }
             }
 
+            // Função para verificar combinação
+            async function checkCombination() {
+                if (!selectedBottle1 || !selectedBottle2) {
+                    alert('Selecione duas Fullbottles primeiro!');
+                    return;
+                }
+
+                try {
+                    //Manda as fullbottles selecionadas para a consulta na função get "/bestmatch/:id1/:id2"
+                    const response = await fetch(`/bestmatch/${selectedBottle1}/${selectedBottle2}`);
+                    const result = await response.json();
+                    
+                    const combinationResult = document.getElementById('combinationResult');
+                    const combinationDetails = document.getElementById('combinationDetails');
+                    
+                    combinationResult.style.display = 'block';
+                    //Mostra os resultados
+                    if (result.isValidCombination) {
+                        combinationResult.className = 'combination-result valid-combination';
+                        combinationDetails.innerHTML = `
+                            <div>
+                                <h4>Combinação Válida!</h4>
+                                <h3>${result.bestmatch.nome_m}</h3>
+                                <p><strong>Descrição:</strong> ${result.bestmatch.descricao_m}</p>
+                            </div>
+                            <div>
+                                <h4>Fullbottles Utilizadas:</h4>
+                                <div>
+                                    <strong>${result.fullbottle1.nome}</strong>
+                                    ${result.fullbottle1.descricao}
+                                </div>
+                                <div>
+                                    <strong>${result.fullbottle2.nome}</strong>
+                                    ${result.fullbottle2.descricao}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        combinationResult.className = 'combination-result invalid-combination';
+                        combinationDetails.innerHTML = `
+                            <div>
+                                <h4>Combinação Inválida!</h4>
+                                <p>Não existe uma Combinação registrada.</p>
+                            </div>
+                            <div>
+                                <h4>Fullbottles Selecionadas:</h4>
+                                <div>
+                                    <strong>${result.fullbottle1.nome}</strong>
+                                    ${result.fullbottle1.descricao}
+                                </div>
+                                <div>
+                                    <strong>${result.fullbottle2.nome}</strong>
+                                    ${result.fullbottle2.descricao}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar combinação:', error);
+                    alert('Erro ao verificar combinação');
+                }
+            }
+
+            // Função para atualizar o estado do botão
+            function updateCheckButton() {
+                const checkBtn = document.getElementById('checkCombinationBtn');
+                checkBtn.disabled = !(selectedBottle1 && selectedBottle2);
+            }
+
             // Event listener para o primeiro select
             document.getElementById('fullbottleSelect1').addEventListener('change', async function() {
                 const id = this.value;
+                selectedBottle1 = id;
                 const detailsDiv = document.getElementById('fullbottleDetails1');
+                
+                // Esconder resultado anterior
+                document.getElementById('combinationResult').style.display = 'none';
+                
                 if (!id) {
                     detailsDiv.innerHTML = '';
+                    updateCheckButton();
                     return;
                 }
-                
+
+                //Manda o id da fullbottle escolhida para get "/fullbottle/:id"
                 try {
                     const resp = await fetch(`/fullbottles/${id}`);
                     const data = await resp.json();
@@ -132,23 +192,24 @@
                     
                     if (main) {
                         html += `<h3>Selecionada</h3>
-                                <div class='bottle'>
+                                <div>
                                     <strong>${main.nome}</strong>
-                                    <br>${main.descricao}
+                                    ${main.descricao}
                                 </div>`;
                     } else {
                         html += '<div>Não encontrado</div>';
                     }
                     
                     if (best) {
-                        html += `<h3>Best Match</h3>    
-                                <div class='bottle'>   
+                        html += `<h3>Best Match Sugerida</h3>    
+                                <div>   
                                     <strong>${best.nome}</strong>
-                                    <br>${best.descricao}
+                                    ${best.descricao}
                                 </div>`;
                     }
                     
                     detailsDiv.innerHTML = html;
+                    updateCheckButton();
                 } catch (error) {
                     console.error('Erro ao carregar detalhes:', error);
                     detailsDiv.innerHTML = '<div>Erro ao carregar detalhes</div>';
@@ -158,31 +219,37 @@
             // Event listener para o segundo select
             document.getElementById('fullbottleSelect2').addEventListener('change', async function() {
                 const id = this.value;
+                selectedBottle2 = id;
                 const detailsDiv = document.getElementById('fullbottleDetails2');
+                
+                // Esconder resultado anterior
+                document.getElementById('combinationResult').style.display = 'none';
+                
                 if (!id) {
                     detailsDiv.innerHTML = '';
+                    updateCheckButton();
                     return;
                 }
                 
+                //Manda o id da fullbottle escolhida para get "/fullbottle/:id"
                 try {
                     const resp = await fetch(`/fullbottles/${id}`);
                     const data = await resp.json();
                     const main = data.main;
-                    const best = data.bestMatch;
                     let html = '';
                     
                     if (main) {
                         html += `<h3>Selecionada</h3>
-                                <div class='bottle'>
+                                <div>
                                     <strong>${main.nome}</strong>
-                                    <br>${main.descricao}
+                                    ${main.descricao}
                                 </div>`;
                     } else {
                         html += '<div>Não encontrado</div>';
                     }
                     
-                    
                     detailsDiv.innerHTML = html;
+                    updateCheckButton();
                 } catch (error) {
                     console.error('Erro ao carregar detalhes:', error);
                     detailsDiv.innerHTML = '<div>Erro ao carregar detalhes</div>';
