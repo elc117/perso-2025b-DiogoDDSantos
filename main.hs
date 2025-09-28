@@ -86,4 +86,6 @@ main = do
         then status status404 >> json ("fullbottle not found" :: String)
         else json $ object ["main" .= mainBottle, "bestMatch" .= bestBottle]
 
+    get "/fullbottles/:id" $ do
+
     

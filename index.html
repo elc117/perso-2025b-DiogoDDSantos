@@ -3,10 +3,43 @@
     <head>
         <title>Fullbottles Web</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            .container { max-width: 800px; margin: 0 auto; }
-            .bottle { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-            button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 40px; 
+            }
+            .container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+            }
+            .bottle { 
+                border: 1px solid #ddd; 
+                padding: 15px; 
+                margin: 10px 0; 
+                border-radius: 5px; 
+            }
+            button { 
+                padding: 10px 15px; 
+                margin: 5px; 
+                cursor: pointer; 
+            }
+            .selection-container {
+                display: flex;
+                gap: 20px;
+                margin-top: 20px;
+                align-items: flex-start;
+            }
+            .selection-box {
+                flex: 1;
+                border: 1px solid #eee;
+                padding: 15px;
+                border-radius: 5px;
+                min-height: 200px;
+            }
+            select {
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 10px;
+            }
         </style>
     </head>
     <body>
@@ -14,7 +47,26 @@
             <h1>Fullbottles</h1>
             <div id='bottles'></div>
             <button onclick='loadBottles()'>Carregar Fullbottles</button>
+            
+            <div class="selection-container">
+                <div class="selection-box">
+                    <h3>Seleção 1</h3>
+                    <select id="fullbottleSelect1">
+                        <option value="">Selecione uma Fullbottle</option>
+                    </select>
+                    <div id="fullbottleDetails1"></div>
+                </div>
+                
+                <div class="selection-box">
+                    <h3>Seleção 2</h3>
+                    <select id="fullbottleSelect2">
+                        <option value="">Selecione uma Fullbottle</option>
+                    </select>
+                    <div id="fullbottleDetails2"></div>
+                </div>
+            </div>
         </div>
+
         <script>
             async function loadBottles() {
                 try {
@@ -30,53 +82,117 @@
                 } catch (error) {
                     console.error('Erro:', error);
                 }
-            } 
-        </script>
-
-        
-        <select id="fullbottleSelect">
-            <option value="">Selecione uma Fullbottle</option>
-        </select>
-        <div id="fullbottleDetails"></div>
-
-        <script>
-            async function carregarFullbottles() {
-                const resp = await fetch('/fullbottles');
-                const bottles = await resp.json();
-                const select = document.getElementById('fullbottleSelect');
-                bottles.forEach(bottle => {
-                    const opt = document.createElement('option');
-                    opt.value = bottle.id;
-                    opt.textContent = bottle.nome;
-                    select.appendChild(opt);
-                });
             }
 
+            // Função para carregar as fullbottles nos selects
+            async function carregarFullbottles() {
+                try {
+                    const resp = await fetch('/fullbottles');
+                    const bottles = await resp.json();
+                    
+                    // Carregar no primeiro select
+                    const select1 = document.getElementById('fullbottleSelect1');
+                    select1.innerHTML = '<option value="">Selecione uma Fullbottle</option>';
+                    bottles.forEach(bottle => {
+                        const opt = document.createElement('option');
+                        opt.value = bottle.id;
+                        opt.textContent = bottle.nome;
+                        select1.appendChild(opt);
+                    });
+                    
+                    // Carregar no segundo select
+                    const select2 = document.getElementById('fullbottleSelect2');
+                    select2.innerHTML = '<option value="">Selecione uma Fullbottle</option>';
+                    bottles.forEach(bottle => {
+                        const opt = document.createElement('option');
+                        opt.value = bottle.id;
+                        opt.textContent = bottle.nome;
+                        select2.appendChild(opt);
+                    });
+                } catch (error) {
+                    console.error('Erro ao carregar fullbottles:', error);
+                }
+            }
 
-            document.getElementById('fullbottleSelect').addEventListener('change', async function() {
+            // Event listener para o primeiro select
+            document.getElementById('fullbottleSelect1').addEventListener('change', async function() {
                 const id = this.value;
-                const detailsDiv = document.getElementById('fullbottleDetails');
+                const detailsDiv = document.getElementById('fullbottleDetails1');
                 if (!id) {
                     detailsDiv.innerHTML = '';
                     return;
                 }
-                const resp = await fetch(`/fullbottles/${id}`);
-                const data = await resp.json();
-                const main = data.main;
-                const best = data.bestMatch;
-                let html = '';
-                if (main) {
-                    html += `<h3>Selecionada</h3><div class='bottle'><strong>${main.nome}</strong><br>${main.descricao}</div>`;
-                } else {
-                    html += '<div>Não encontrado</div>';
+                
+                try {
+                    const resp = await fetch(`/fullbottles/${id}`);
+                    const data = await resp.json();
+                    const main = data.main;
+                    const best = data.bestMatch;
+                    let html = '';
+                    
+                    if (main) {
+                        html += `<h3>Selecionada</h3>
+                                <div class='bottle'>
+                                    <strong>${main.nome}</strong>
+                                    <br>${main.descricao}
+                                </div>`;
+                    } else {
+                        html += '<div>Não encontrado</div>';
+                    }
+                    
+                    if (best) {
+                        html += `<h3>Best Match</h3>    
+                                <div class='bottle'>   
+                                    <strong>${best.nome}</strong>
+                                    <br>${best.descricao}
+                                </div>`;
+                    }
+                    
+                    detailsDiv.innerHTML = html;
+                } catch (error) {
+                    console.error('Erro ao carregar detalhes:', error);
+                    detailsDiv.innerHTML = '<div>Erro ao carregar detalhes</div>';
                 }
-                if (best) {
-                    html += `<h3>Best Match</h3><div class='bottle'><strong>${best.nome}</strong><br>${best.descricao}</div>`;
-                }
-                detailsDiv.innerHTML = html;
             });
 
-            carregarFullbottles();
+            // Event listener para o segundo select
+            document.getElementById('fullbottleSelect2').addEventListener('change', async function() {
+                const id = this.value;
+                const detailsDiv = document.getElementById('fullbottleDetails2');
+                if (!id) {
+                    detailsDiv.innerHTML = '';
+                    return;
+                }
+                
+                try {
+                    const resp = await fetch(`/fullbottles/${id}`);
+                    const data = await resp.json();
+                    const main = data.main;
+                    const best = data.bestMatch;
+                    let html = '';
+                    
+                    if (main) {
+                        html += `<h3>Selecionada</h3>
+                                <div class='bottle'>
+                                    <strong>${main.nome}</strong>
+                                    <br>${main.descricao}
+                                </div>`;
+                    } else {
+                        html += '<div>Não encontrado</div>';
+                    }
+                    
+                    
+                    detailsDiv.innerHTML = html;
+                } catch (error) {
+                    console.error('Erro ao carregar detalhes:', error);
+                    detailsDiv.innerHTML = '<div>Erro ao carregar detalhes</div>';
+                }
+            });
+
+            // Carregar as fullbottles quando a página carregar
+            document.addEventListener('DOMContentLoaded', function() {
+                carregarFullbottles();
+            });
         </script>
     </body>
 </html>
