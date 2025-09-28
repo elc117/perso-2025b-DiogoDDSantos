@@ -30,16 +30,45 @@ instance FromRow Fullbottles where
 instance ToRow Fullbottles where
   toRow (Fullbottles _ nome_ descricao_) = toRow (nome_, descricao_)
 
+-- Declarando o segundo banco
+data Bestmatch = Bestmatch
+  { id_m  :: Int
+  , nome_m  :: String
+  , descricao_m :: String
+  , fullbottle1 :: Int
+  , fullbottle2 :: Int
+  } deriving (Show, Generic)
+
+instance ToJSON Bestmatch
+instance FromJSON Bestmatch
+
+instance FromRow Bestmatch where
+  fromRow = Bestmatch <$> field <*> field <*> field <*> field <*> field
+
+instance ToRow Bestmatch where
+  toRow (Bestmatch _ nome_ descricao_ fullbottle1_ fullbottle2_) = toRow (nome_, descricao_, fullbottle1_, fullbottle2_)
+
 hostAny :: HostPreference
 hostAny = "*"
 
+-- Inicialização única do banco de dados
 initDB :: Connection -> IO ()
-initDB conn = execute_ conn
-  "CREATE TABLE IF NOT EXISTS fullbottles (\
-  \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
-  \ nome TEXT,\ 
-  \ descricao TEXT)"
-
+initDB conn = do
+  -- Tabela fullbottles
+  execute_ conn
+    "CREATE TABLE IF NOT EXISTS fullbottles (\
+    \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
+    \ nome TEXT,\ 
+    \ descricao TEXT)"
+  
+  -- Tabela bestmatch
+  execute_ conn
+    "CREATE TABLE IF NOT EXISTS bestmatch (\
+    \ id INTEGER PRIMARY KEY,\
+    \ nome TEXT,\ 
+    \ descricao TEXT,\
+    \ fullbottle1 INTEGER REFERENCES fullbottles(id),\
+    \ fullbottle2 INTEGER REFERENCES fullbottles(id))"
 
 isOdd :: Int -> Bool
 isOdd x = x `mod` 2 == 1  
@@ -47,11 +76,10 @@ isOdd x = x `mod` 2 == 1
 bestMatch :: Int -> Int
 bestMatch x = if isOdd x then x + 1 else x - 1 
 
-
 main :: IO ()
 main = do
   conn <- open "fullbottles.db"
-  initDB conn
+  initDB conn  -- Uma única chamada para inicializar ambas as tabelas
 
   mPort <- lookupEnv "PORT"
   let port = maybe 3000 Prelude.id (mPort >>= readMaybe)
@@ -85,7 +113,3 @@ main = do
       if null result
         then status status404 >> json ("fullbottle not found" :: String)
         else json $ object ["main" .= mainBottle, "bestMatch" .= bestBottle]
-
-    get "/fullbottles/:id" $ do
-
-    
